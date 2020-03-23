@@ -5,7 +5,7 @@ ___INFO___
   "id": "cvt_temp_public_id",
   "version": 1,
   "securityGroups": [],
-  "displayName": "Snap Pixel / Elevar GTM Monitoring",
+  "displayName": "Facebook Pixel / Elevar GTM Monitoring",
   "brand": {
     "id": "brand_dummy",
     "displayName": ""
@@ -97,8 +97,8 @@ const addTagInformation = createQueue(TAG_INFO);
 const variablesUsed = [];
 
 /*
-NOTE: This is almost identical to the facebook template, so if a bug
-is fixed here. It should also be fixed in the facebook template.
+NOTE: This is almost identical to the snapchat template, so if a bug
+is fixed here. It should also be fixed in the snapchat template.
 */
 
 if (!data.content && !data.event) {
@@ -113,9 +113,9 @@ if (data.content) {
       	if (item.variableName) variablesUsed.push(item.variableName);
     });
   
-    callInWindow('snaptr', data.type, data.event, contentObj);
+    callInWindow('fbq', data.type, data.event, contentObj);
 } else {
-	callInWindow('snaptr', data.type, data.event);
+	callInWindow('fbq', data.type, data.event);
 }
 
 addTagInformation({
@@ -204,7 +204,7 @@ ___WEB_PERMISSIONS___
                 "mapValue": [
                   {
                     "type": 1,
-                    "string": "snaptr"
+                    "string": "fbq"
                   },
                   {
                     "type": 8,
@@ -262,60 +262,61 @@ scenarios:
     // Verify that the tag finished successfully.
     assertApi('gtmOnSuccess').wasCalled();
     assertThat(calledInWindow).hasLength(1);
-    assertThat(calledInWindow[0][0]).isEqualTo('snaptr');
+    assertThat(calledInWindow[0][0]).isEqualTo('fbq');
     assertThat(calledInWindow[0][1]).isEqualTo('track');
-    assertThat(calledInWindow[0][2]).isEqualTo('PURCHASE');
-    assertThat(calledInWindow[0][3]).isEqualTo({currency: "EUR", price: 40.99});
+    assertThat(calledInWindow[0][2]).isEqualTo('AddToCart');
+    assertThat(calledInWindow[0][3]).isEqualTo({content_ids: "Cool"});
     assertThat(window[TAG_INFO]).hasLength(1);
     assertThat(window[TAG_INFO][0])
       .isEqualTo({
-      tagName: 'Snapchat - Purchase',
+      tagName: 'Facebook - Add to Cart',
       eventId: 13,
-      variables: ["dlv - Global - Currency", "dlv - Purchase - Total Price"]
+      variables: ["dlv - Product View - SKU"]
     });
 - name: With No Variable Name
   code: |-
-    mockData.content = [{ key: "test", value:"10", variableName: "" }];
+    mockData.content[0] = { key: "test", value:"10", variableName: "" };
 
     // Call runCode to run the template's code.
     runCode(mockData);
 
     // Verify that the tag finished successfully.
     assertApi('gtmOnSuccess').wasCalled();
-    assertApi('callInWindow').wasCalledWith('snaptr', 'track', 'PURCHASE', {test: "10"});
+    assertApi('callInWindow').wasCalledWith('fbq', 'track', 'AddToCart', {test: "10"});
     assertThat(window[TAG_INFO]).hasLength(1);
     assertThat(window[TAG_INFO][0])
       .isEqualTo({
-      tagName: 'Snapchat - Purchase',
+      tagName: 'Facebook - Add to Cart',
       eventId: 13,
       variables: []
     });
 - name: With Multiple Mixed
   code: |-
-    mockData.content = [
+    mockData.content.push(
       { key: "currency", value:"USD", variableName: "" },
-      { key: "value", value: 30.00, variableName: "dlv - Product Price" }];
+      { key: "value", value: 30.00, variableName: "dlv - Product Price" }
+    );
 
     // Call runCode to run the template's code.
     runCode(mockData);
 
     // Verify that the tag finished successfully.
     assertApi('gtmOnSuccess').wasCalled();
-    assertApi('callInWindow').wasCalledWith('snaptr', 'track', 'PURCHASE', {currency: 'USD', value: 30.00 });
+    assertApi('callInWindow').wasCalledWith('fbq', 'track', 'AddToCart', {content_ids: "Cool", currency: 'USD', value: 30.00 });
     assertThat(window[TAG_INFO]).hasLength(1);
     assertThat(window[TAG_INFO][0])
       .isEqualTo({
-      tagName: 'Snapchat - Purchase',
+      tagName: 'Facebook - Add to Cart',
       eventId: 13,
-      variables: ["dlv - Product Price"]
+      variables: ["dlv - Product View - SKU", "dlv - Product Price"]
     });
 - name: With No Data
   code: |-
     mockData = {
-      tagName: "Snapchat - Page View",
+      tagName: "Facebook - Page View",
       type: 'track',
       event: "PageView",
-      gtmEventId: 13
+      gtmEventId: 13,
     };
 
     // Call runCode to run the template's code.
@@ -323,32 +324,18 @@ scenarios:
 
     // Verify that the tag finished successfully.
     assertApi('gtmOnSuccess').wasCalled();
-    assertApi('callInWindow').wasCalledWith('snaptr', 'track', 'PageView');
+    assertApi('callInWindow').wasCalledWith('fbq', 'track', 'PageView');
     assertThat(window[TAG_INFO]).hasLength(1);
     assertThat(window[TAG_INFO][0]).isEqualTo({
-      tagName: 'Snapchat - Page View',
+      tagName: "Facebook - Page View",
       eventId: 13,
       variables: []
     });
-- name: With Invalid input
-  code: |-
-    mockData = {
-      tagName: "Snapchat - Page View",
-      type: 'track',
-      gtmEventId: 13
-    };
-
-    // Call runCode to run the template's code.
-    runCode(mockData);
-
-    // Verify that the tag failed.
-    assertApi('gtmOnFailure').wasCalled();
 setup: "const log = require('logToConsole');\n\n// Custom window object used by mock\
   \ functions\nlet window = {};\nconst TAG_INFO = 'elevar_gtm_tag_info';\n\n// Mock\
-  \ data used in template\nlet mockData = {\n  tagName: \"Snapchat - Purchase\",\n\
-  \  type: \"track\",\n  event: \"PURCHASE\",\n  content: [\n    { key: \"currency\"\
-  , value: \"EUR\", variableName: \"dlv - Global - Currency\" },\n    { key: \"price\"\
-  , value: 40.99, variableName: \"dlv - Purchase - Total Price\" },\n  ],\n  gtmTagId:\
+  \ data used in template\nlet mockData = {\n  tagName: \"Facebook - Add to Cart\"\
+  ,\n  type: \"track\",\n  event: \"AddToCart\",\n  content: [\n    { key: \"content_ids\"\
+  , value: \"Cool\", variableName: \"dlv - Product View - SKU\" },\n  ],\n  gtmTagId:\
   \ 2147483645,\n  gtmEventId: 13\n};\n\n/*\nCreates an array in the window with the\
   \ key provided and\nreturns a function that pushes items to that array.\n*/\nmock('createQueue',\
   \ (key) => {\n  const pushToArray = (arr) => (item) => {\n    arr.push(item);\n\
