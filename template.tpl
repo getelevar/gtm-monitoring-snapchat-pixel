@@ -94,31 +94,37 @@ const callInWindow = require('callInWindow');
 const TAG_INFO = 'elevar_gtm_tag_info';
 const addTagInformation = createQueue(TAG_INFO);
 
-if (data.content) {
-	const contentObj = {};
+const variablesUsed = [];
 
+/*
+NOTE: This is almost identical to the facebook template, so if a bug
+is fixed here. It should also be fixed in the facebook template.
+*/
+
+if (!data.content && !data.event) {
+  data.gtmOnFailure();
+}
+
+if (data.content) {
+	// Additional Data to send
+	const contentObj = {};
     data.content.forEach((item) => {
         contentObj[item.key] = item.value;
-    });
-  
-  	const variablesUsed = data.content
-    	.filter(item => item.variableName)
-    	.map(item => item.variableName);
-  
-  	addTagInformation({
-		tagName: data.tagName,
-      	eventId: data.gtmEventId,
-        variables: variablesUsed,
+      	if (item.variableName) variablesUsed.push(item.variableName);
     });
   
     callInWindow('snaptr', data.type, data.event, contentObj);
-    data.gtmOnSuccess();
-} else if (data.event) {
-	callInWindow('snaptr', data.type, data.event);
-	data.gtmOnSuccess();
 } else {
-	data.gtmOnFailure();
+	callInWindow('snaptr', data.type, data.event);
 }
+
+addTagInformation({
+  tagName: data.tagName,
+  eventId: data.gtmEventId,
+  variables: variablesUsed,
+});
+
+data.gtmOnSuccess();
 
 
 ___WEB_PERMISSIONS___
@@ -309,6 +315,7 @@ scenarios:
       tagName: "Snapchat - Page View",
       type: 'track',
       event: "PageView",
+      gtmEventId: 13
     };
 
     // Call runCode to run the template's code.
@@ -317,7 +324,25 @@ scenarios:
     // Verify that the tag finished successfully.
     assertApi('gtmOnSuccess').wasCalled();
     assertApi('callInWindow').wasCalledWith('snaptr', 'track', 'PageView');
-    assertThat(window[TAG_INFO]).hasLength(0);
+    assertThat(window[TAG_INFO]).hasLength(1);
+    assertThat(window[TAG_INFO][0]).isEqualTo({
+      tagName: 'Snapchat - Page View',
+      eventId: 13,
+      variables: []
+    });
+- name: With Invalid input
+  code: |-
+    mockData = {
+      tagName: "Snapchat - Page View",
+      type: 'track',
+      gtmEventId: 13
+    };
+
+    // Call runCode to run the template's code.
+    runCode(mockData);
+
+    // Verify that the tag failed.
+    assertApi('gtmOnFailure').wasCalled();
 setup: "const log = require('logToConsole');\n\n// Custom window object used by mock\
   \ functions\nlet window = {};\nconst TAG_INFO = 'elevar_gtm_tag_info';\n\n// Mock\
   \ data used in template\nlet mockData = {\n  tagName: \"Snapchat - Purchase\",\n\
