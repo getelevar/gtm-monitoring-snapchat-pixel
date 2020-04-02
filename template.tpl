@@ -5,7 +5,7 @@ ___INFO___
   "id": "cvt_temp_public_id",
   "version": 1,
   "securityGroups": [],
-  "displayName": "Snap Pixel / Elevar GTM Monitoring",
+  "displayName": "Snapchat / Elevar Monitoring",
   "brand": {
     "id": "brand_dummy",
     "displayName": ""
@@ -119,6 +119,7 @@ if (data.content) {
 }
 
 addTagInformation({
+  channel: 'snapchat',
   tagName: data.tagName,
   eventId: data.gtmEventId,
   variables: variablesUsed
@@ -255,7 +256,7 @@ ___TESTS___
 
 scenarios:
 - name: With Variable Name
-  code: |-
+  code: |
     // Call runCode to run the template's code.
     runCode(mockData);
 
@@ -267,12 +268,10 @@ scenarios:
     assertThat(calledInWindow[0][2]).isEqualTo('PURCHASE');
     assertThat(calledInWindow[0][3]).isEqualTo({currency: "EUR", price: 40.99});
     assertThat(window[TAG_INFO]).hasLength(1);
-    assertThat(window[TAG_INFO][0])
-      .isEqualTo({
-      tagName: 'Snapchat - Purchase',
-      eventId: 13,
-      variables: ["dlv - Global - Currency", "dlv - Purchase - Total Price"]
-    });
+    assertThat(window[TAG_INFO][0].tagName).isEqualTo('Snapchat - Purchase');
+    assertThat(window[TAG_INFO][0].channel).isEqualTo('snapchat');
+    assertThat(window[TAG_INFO][0].eventId).isEqualTo(13);
+    assertThat(window[TAG_INFO][0].variables).isEqualTo(["dlv - Global - Currency", "dlv - Purchase - Total Price"]);
 - name: With No Variable Name
   code: |-
     mockData.content = [{ key: "test", value:"10", variableName: "" }];
@@ -284,12 +283,7 @@ scenarios:
     assertApi('gtmOnSuccess').wasCalled();
     assertApi('callInWindow').wasCalledWith('snaptr', 'track', 'PURCHASE', {test: "10"});
     assertThat(window[TAG_INFO]).hasLength(1);
-    assertThat(window[TAG_INFO][0])
-      .isEqualTo({
-      tagName: 'Snapchat - Purchase',
-      eventId: 13,
-      variables: []
-    });
+    assertThat(window[TAG_INFO][0].variables).isEqualTo([]);
 - name: With Multiple Mixed
   code: |-
     mockData.content = [
@@ -303,12 +297,7 @@ scenarios:
     assertApi('gtmOnSuccess').wasCalled();
     assertApi('callInWindow').wasCalledWith('snaptr', 'track', 'PURCHASE', {currency: 'USD', value: 30.00 });
     assertThat(window[TAG_INFO]).hasLength(1);
-    assertThat(window[TAG_INFO][0])
-      .isEqualTo({
-      tagName: 'Snapchat - Purchase',
-      eventId: 13,
-      variables: ["dlv - Product Price"]
-    });
+    assertThat(window[TAG_INFO][0].variables).isEqualTo(["dlv - Product Price"]);
 - name: With No Data
   code: |-
     mockData = {
@@ -325,11 +314,8 @@ scenarios:
     assertApi('gtmOnSuccess').wasCalled();
     assertApi('callInWindow').wasCalledWith('snaptr', 'track', 'PageView');
     assertThat(window[TAG_INFO]).hasLength(1);
-    assertThat(window[TAG_INFO][0]).isEqualTo({
-      tagName: 'Snapchat - Page View',
-      eventId: 13,
-      variables: []
-    });
+    assertThat(window[TAG_INFO][0].tagName).isEqualTo("Snapchat - Page View");
+    assertThat(window[TAG_INFO][0].variables).isEqualTo([]);
 - name: With Invalid input
   code: |-
     mockData = {
